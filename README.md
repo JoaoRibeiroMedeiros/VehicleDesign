@@ -29,6 +29,13 @@ VehicleDesign/
 
 ## Features
 
+### 📚 Comprehensive Documentation
+- **Parameter Explanations**: Detailed docstrings for all aircraft parameters
+- **Physical Significance**: Understanding of how each parameter affects performance
+- **Typical Values**: Real-world ranges for different aircraft types
+- **Design Trade-offs**: Insights into competing design requirements
+- **Interactive Explorer**: Script to explore parameter relationships
+
 ### 🛩️ Aircraft Design Analysis
 - **Geometric Parameters**: Wing span, area, aspect ratio, sweep angle, and more
 - **Mass Properties**: Empty weight, fuel capacity, payload, MTOW
@@ -70,11 +77,22 @@ pip install -r requirements.txt
 
 ## Quick Start
 
+### Understanding Aircraft Parameters
+
+First, explore the comprehensive parameter documentation:
+
+```bash
+# Activate the virtual environment
+source activate.sh
+
+# Explore aircraft parameters with detailed explanations
+python scripts/explore_parameters.py
+```
+
 ### Basic Aircraft Analysis
 
 ```python
-from aircraft import create_sample_aircraft
-from performance_analysis import PerformanceAnalyzer
+from src import create_sample_aircraft, PerformanceAnalyzer
 
 # Create sample aircraft designs
 aircraft_list = create_sample_aircraft()
@@ -102,7 +120,7 @@ print(f"Endurance: {endurance_hrs:.1f} hours")
 ### Flight Conditions Testing
 
 ```python
-from flight_conditions import FlightConditions, AtmosphericConditions
+from src import FlightConditions, AtmosphericConditions
 
 # Create flight condition
 altitude = 10000  # meters
@@ -122,8 +140,8 @@ print(f"Dynamic Pressure: {condition.dynamic_pressure:.1f} Pa")
 ### Design Optimization
 
 ```python
-from design_optimizer import (DesignOptimizer, MaximizeRange, 
-                             StallSpeedConstraint, TakeoffDistanceConstraint)
+from src import (DesignOptimizer, MaximizeRange, 
+                StallSpeedConstraint, TakeoffDistanceConstraint)
 
 # Set up optimizer
 optimizer = DesignOptimizer()
@@ -149,7 +167,7 @@ result = optimizer.optimize(base_aircraft)
 ### Visualization
 
 ```python
-from visualization import AircraftVisualizer, compare_aircraft_designs
+from src import AircraftVisualizer, compare_aircraft_designs
 
 # Single aircraft analysis
 visualizer = AircraftVisualizer(aircraft)
@@ -167,7 +185,20 @@ fig_comp = compare_aircraft_designs(aircraft_list)
 Run the comprehensive examples to see all features in action:
 
 ```bash
-python examples.py
+# Activate virtual environment
+source activate.sh
+
+# Run comprehensive examples with performance analysis
+python scripts/run_examples.py
+
+# Create interactive web-based visualizations
+python scripts/interactive_demo.py
+
+# Explore parameter documentation and design insights
+python scripts/explore_parameters.py
+
+# Test system functionality
+python scripts/test_system.py
 ```
 
 This will generate:
@@ -198,12 +229,22 @@ The system includes three pre-configured aircraft types:
 
 ## Key Modules
 
-- **`aircraft.py`**: Core aircraft classes and geometry definitions
+### Core Library (`src/`)
+- **`aircraft.py`**: Core aircraft classes with comprehensive parameter documentation
 - **`flight_conditions.py`**: Atmospheric modeling and flight parameters
 - **`performance_analysis.py`**: Range, endurance, and performance calculations
 - **`design_optimizer.py`**: Multi-objective optimization framework
-- **`visualization.py`**: Plotting and visualization tools
-- **`examples.py`**: Comprehensive demonstration scripts
+- **`visualization.py`**: Plotting and visualization tools with automatic path management
+
+### Executable Scripts (`scripts/`)
+- **`test_system.py`**: System validation and functionality testing
+- **`run_examples.py`**: Comprehensive analysis examples and demonstrations
+- **`interactive_demo.py`**: Web-based interactive visualizations
+- **`explore_parameters.py`**: Interactive parameter documentation and insights
+
+### Generated Content (`visualizations/`)
+- **Static plots**: PNG files with performance analysis charts
+- **Interactive dashboards**: HTML files with web-based exploration tools
 
 ## Technical Approach
 
