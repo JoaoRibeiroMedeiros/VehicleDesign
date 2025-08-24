@@ -187,6 +187,24 @@ aircraft_list = create_sample_aircraft()
 fig_comp = compare_aircraft_designs(aircraft_list)
 ```
 
+### 3D Aircraft Visualization
+
+```python
+from src import Aircraft3DVisualizer, create_aircraft_comparison_3d
+
+# Create 3D visualizer for an aircraft
+visualizer = Aircraft3DVisualizer(aircraft)
+
+# Generate 3D matplotlib plot
+fig_3d = visualizer.plot_3d_aircraft_matplotlib('my_aircraft_3d.png')
+
+# Create interactive 3D model
+interactive_fig = visualizer.create_interactive_3d_plotly()
+
+# Compare multiple aircraft in 3D
+comparison_fig = create_aircraft_comparison_3d(aircraft_list, 'comparison_3d.png')
+```
+
 ## Example Scripts
 
 Run the comprehensive examples to see all features in action:
