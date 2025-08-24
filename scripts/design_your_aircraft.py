@@ -10,6 +10,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+import numpy as np
 import matplotlib.pyplot as plt
 from src import Aircraft, AircraftGeometry, AircraftMass, Aircraft3DVisualizer
 
@@ -159,14 +160,36 @@ def show_aircraft_analysis(aircraft: Aircraft):
     print(f"  • Payload fraction: {payload_fraction:.1%}")
     
     # Performance estimates
-    from src import PerformanceAnalyzer
+    from src import PerformanceAnalyzer, FlightEnvelope
     analyzer = PerformanceAnalyzer(aircraft)
+    envelope = FlightEnvelope(aircraft)
+    
     optimal_aoa = analyzer.find_optimal_angle_of_attack()
     max_ld = aircraft.calculate_lift_drag_ratio(optimal_aoa)
+    
+    # Calculate key performance metrics
+    stall_speed_sl = envelope.calculate_stall_speed(0, mass.max_takeoff_weight)  # Sea level
+    stall_speed_10k = envelope.calculate_stall_speed(10000, mass.max_takeoff_weight)  # 10km altitude
+    service_ceiling = envelope.calculate_service_ceiling(mass.max_takeoff_weight)
+    
+    # Range and endurance estimates
+    range_km = analyzer.calculate_range(10000, 200, mass.fuel_capacity)  # Cruise at 10km, 200 m/s
+    endurance_hrs = analyzer.calculate_endurance(8000, mass.fuel_capacity)  # Endurance at 8km
+    
+    # Takeoff performance
+    takeoff_data = analyzer.analyze_takeoff_performance(3000)  # 3km runway
     
     print(f"\nAerodynamic Performance:")
     print(f"  • Optimal angle of attack: {optimal_aoa:.1f}°")
     print(f"  • Maximum L/D ratio: {max_ld:.1f}")
+    print(f"  • Stall speed (sea level): {stall_speed_sl:.1f} m/s ({stall_speed_sl*3.6:.0f} km/h)")
+    print(f"  • Stall speed (10km alt): {stall_speed_10k:.1f} m/s ({stall_speed_10k*3.6:.0f} km/h)")
+    
+    print(f"\nMission Performance:")
+    print(f"  • Estimated range: {range_km:.0f} km")
+    print(f"  • Estimated endurance: {endurance_hrs:.1f} hours")
+    print(f"  • Service ceiling: {service_ceiling:.0f} m ({service_ceiling/1000:.1f} km)")
+    print(f"  • Takeoff distance: {takeoff_data['total_distance']:.0f} m")
     
     # Design category assessment
     print(f"\nDesign Assessment:")
@@ -192,39 +215,347 @@ def show_aircraft_analysis(aircraft: Aircraft):
         print("  • Moderate wing loading → Versatile performance")
 
 
-def create_3d_visualization(aircraft: Aircraft):
-    """Create 3D visualization of the custom aircraft."""
-    print(f"\n🎨 Creating 3D Visualization...")
+def create_comprehensive_analysis(aircraft: Aircraft):
+    """Create comprehensive performance analysis and visualizations."""
+    print(f"\n📊 Creating Comprehensive Performance Analysis...")
     
-    visualizer = Aircraft3DVisualizer(aircraft)
-    
-    # Create static 3D plot
     safe_name = aircraft.name.lower().replace(" ", "_").replace("/", "_")
-    filename = f"custom_aircraft_{safe_name}.png"
     
-    fig = visualizer.plot_3d_aircraft_matplotlib(filename)
-    plt.show()  # Display the plot
-    plt.close(fig)
-    
-    print(f"  ✓ 3D view saved as '{filename}'")
-    
-    # Create interactive 3D plot
-    interactive_fig = visualizer.create_interactive_3d_plotly()
-    interactive_filename = f"custom_aircraft_{safe_name}_interactive.html"
+    # Create organized folder structure for this custom aircraft
+    import datetime
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    folder_name = f"{safe_name}_{timestamp}"
     
     visualizations_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'visualizations')
-    interactive_path = os.path.join(visualizations_dir, interactive_filename)
-    interactive_fig.write_html(interactive_path)
+    aircraft_folder = os.path.join(visualizations_dir, 'custom_designs', folder_name)
+    os.makedirs(aircraft_folder, exist_ok=True)
     
-    print(f"  ✓ Interactive 3D saved as '{interactive_filename}'")
+    print(f"  📁 Created folder: visualizations/custom_designs/{folder_name}/")
+    
+    # Import required modules
+    from src import (AircraftVisualizer, Aircraft3DVisualizer, PerformanceAnalyzer, 
+                    FlightEnvelope)
+    
+    # Create visualizers and set their output folders
+    visualizer_2d = AircraftVisualizer(aircraft)
+    visualizer_2d.set_output_folder(aircraft_folder)
+    
+    visualizer_3d = Aircraft3DVisualizer(aircraft)
+    visualizer_3d.set_output_folder(aircraft_folder)
+    
+    analyzer = PerformanceAnalyzer(aircraft)
+    envelope = FlightEnvelope(aircraft)
+    
+    print("  📈 Generating performance plots...")
+    
+    # 1. Drag polar
+    fig1 = visualizer_2d.plot_drag_polar('drag_polar.png')
+    plt.close(fig1)
+    print("    ✓ Drag polar")
+    
+    # 2. L/D vs angle of attack
+    fig2 = visualizer_2d.plot_lift_drag_vs_aoa('ld_vs_aoa.png')
+    plt.close(fig2)
+    print("    ✓ L/D vs angle of attack")
+    
+    # 3. V-n diagram
+    fig3 = visualizer_2d.plot_v_n_diagram(save_path='vn_diagram.png')
+    plt.close(fig3)
+    print("    ✓ V-n diagram (flight envelope)")
+    
+    # 4. Performance envelope
+    fig4 = visualizer_2d.plot_performance_envelope('performance_envelope.png')
+    plt.close(fig4)
+    print("    ✓ Performance envelope (3D)")
+    
+    # 5. Climb performance (estimate thrust based on aircraft type)
+    # Estimate thrust based on aircraft characteristics
+    wing_loading = aircraft.mass.max_takeoff_weight * 9.81 / aircraft.geometry.wing_area
+    if wing_loading > 4000:  # High performance aircraft
+        thrust_estimate = aircraft.mass.max_takeoff_weight * 9.81 * 0.8  # High T/W ratio
+    elif wing_loading < 1500:  # Light aircraft
+        thrust_estimate = aircraft.mass.max_takeoff_weight * 9.81 * 0.25  # Low T/W ratio
+    else:  # Medium aircraft
+        thrust_estimate = aircraft.mass.max_takeoff_weight * 9.81 * 0.4  # Medium T/W ratio
+    
+    fig5 = visualizer_2d.plot_climb_performance(thrust_estimate, 'climb_performance.png')
+    plt.close(fig5)
+    print("    ✓ Climb performance")
+    
+    print("  🛩️ Generating 3D visualization...")
+    
+    # 6. 3D aircraft model
+    fig6 = visualizer_3d.plot_3d_aircraft_matplotlib('aircraft_3d.png')
+    plt.show()  # Display the 3D plot
+    plt.close(fig6)
+    print("    ✓ 3D aircraft model")
+    
+    # 7. Interactive 3D model
+    interactive_fig = visualizer_3d.create_interactive_3d_plotly()
+    interactive_filename = 'aircraft_interactive.html'
+    interactive_path = os.path.join(aircraft_folder, interactive_filename)
+    interactive_fig.write_html(interactive_path)
+    print("    ✓ Interactive 3D model")
+    
+    # 8. Create summary dashboard
+    create_performance_summary_plot(aircraft, aircraft_folder)
+    print("    ✓ Performance summary dashboard")
+    
+    print(f"\n  📁 Generated Files in '{folder_name}/':")
+    print(f"    • drag_polar.png")
+    print(f"    • ld_vs_aoa.png") 
+    print(f"    • vn_diagram.png")
+    print(f"    • performance_envelope.png")
+    print(f"    • climb_performance.png")
+    print(f"    • aircraft_3d.png")
+    print(f"    • aircraft_interactive.html")
+    print(f"    • performance_summary.png")
+    
+    # Create a README file for the aircraft folder
+    create_aircraft_readme(aircraft, aircraft_folder, folder_name)
+    print(f"    • README.md (aircraft specifications)")
     
     # Try to open interactive version
     try:
         import webbrowser
-        print(f"  🌐 Opening interactive 3D view in browser...")
+        print(f"\n  🌐 Opening interactive 3D model in browser...")
         webbrowser.open(interactive_path)
     except:
-        print(f"  💡 Open '{interactive_filename}' in your browser for interactivity")
+        print(f"\n  💡 Open '{interactive_filename}' in your browser for interactivity")
+    
+    return aircraft_folder
+
+
+def create_performance_summary_plot(aircraft: Aircraft, aircraft_folder: str):
+    """Create a comprehensive performance summary dashboard."""
+    from src import PerformanceAnalyzer, FlightEnvelope
+    
+    analyzer = PerformanceAnalyzer(aircraft)
+    envelope = FlightEnvelope(aircraft)
+    
+    # Create figure with multiple subplots
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 12))
+    
+    # 1. Drag polar (top left)
+    angles = np.linspace(-5, 20, 100)
+    cl_values = []
+    cd_values = []
+    
+    for angle in angles:
+        cl = aircraft.calculate_lift_coefficient(angle)
+        cd = aircraft.calculate_drag_coefficient(cl)
+        cl_values.append(cl)
+        cd_values.append(cd)
+    
+    ax1.plot(cd_values, cl_values, 'b-', linewidth=2)
+    ax1.grid(True, alpha=0.3)
+    ax1.set_xlabel('Drag Coefficient (CD)')
+    ax1.set_ylabel('Lift Coefficient (CL)')
+    ax1.set_title('Drag Polar')
+    
+    # Mark optimal point
+    optimal_aoa = analyzer.find_optimal_angle_of_attack()
+    optimal_cl = aircraft.calculate_lift_coefficient(optimal_aoa)
+    optimal_cd = aircraft.calculate_drag_coefficient(optimal_cl)
+    ax1.plot(optimal_cd, optimal_cl, 'ro', markersize=8)
+    ax1.annotate(f'Max L/D\n({optimal_cd:.3f}, {optimal_cl:.3f})', 
+                xy=(optimal_cd, optimal_cl), xytext=(optimal_cd+0.005, optimal_cl+0.1),
+                arrowprops=dict(arrowstyle='->', color='red'))
+    
+    # 2. L/D vs AoA (top right)
+    ld_ratios = []
+    for angle in angles:
+        ld = aircraft.calculate_lift_drag_ratio(angle)
+        ld_ratios.append(ld)
+    
+    ax2.plot(angles, ld_ratios, 'g-', linewidth=2)
+    ax2.grid(True, alpha=0.3)
+    ax2.set_xlabel('Angle of Attack (degrees)')
+    ax2.set_ylabel('L/D Ratio')
+    ax2.set_title('Lift-to-Drag Ratio vs AoA')
+    
+    # Mark optimal point
+    max_ld = aircraft.calculate_lift_drag_ratio(optimal_aoa)
+    ax2.plot(optimal_aoa, max_ld, 'ro', markersize=8)
+    ax2.annotate(f'Max L/D\n({optimal_aoa:.1f}°, {max_ld:.1f})', 
+                xy=(optimal_aoa, max_ld), xytext=(optimal_aoa+2, max_ld+1),
+                arrowprops=dict(arrowstyle='->', color='red'))
+    
+    # 3. Stall speed vs altitude (bottom left)
+    altitudes = np.linspace(0, 15000, 30)
+    stall_speeds = []
+    
+    for alt in altitudes:
+        v_stall = envelope.calculate_stall_speed(alt, aircraft.mass.max_takeoff_weight)
+        stall_speeds.append(v_stall)
+    
+    ax3.plot(stall_speeds, altitudes, 'r-', linewidth=2)
+    ax3.grid(True, alpha=0.3)
+    ax3.set_xlabel('Stall Speed (m/s)')
+    ax3.set_ylabel('Altitude (m)')
+    ax3.set_title('Stall Speed vs Altitude')
+    
+    # 4. Performance summary bars (bottom right)
+    metrics = ['Wing Loading\n(N/m²)', 'Max L/D', 'Aspect Ratio', 'Fuel Fraction\n(%)', 'T/O Distance\n(m)']
+    
+    wing_loading = aircraft.mass.max_takeoff_weight * 9.81 / aircraft.geometry.wing_area
+    fuel_fraction = aircraft.mass.fuel_capacity / aircraft.mass.max_takeoff_weight * 100
+    takeoff_data = analyzer.analyze_takeoff_performance(3000)
+    
+    values = [wing_loading/100, max_ld, aircraft.geometry.aspect_ratio, fuel_fraction, takeoff_data['total_distance']/100]
+    colors = ['skyblue', 'lightgreen', 'orange', 'pink', 'lightcoral']
+    
+    bars = ax4.bar(metrics, values, color=colors, alpha=0.7)
+    ax4.set_title('Key Performance Metrics')
+    ax4.set_ylabel('Normalized Values')
+    ax4.tick_params(axis='x', rotation=45)
+    
+    # Add value labels on bars
+    for bar, value, original in zip(bars, values, [wing_loading, max_ld, aircraft.geometry.aspect_ratio, fuel_fraction, takeoff_data['total_distance']]):
+        height = bar.get_height()
+        ax4.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+                f'{original:.1f}', ha='center', va='bottom', fontsize=9)
+    
+    # Overall title
+    plt.suptitle(f'Performance Analysis Summary - {aircraft.name}', fontsize=16, fontweight='bold')
+    plt.tight_layout()
+    
+    # Save summary
+    summary_path = os.path.join(aircraft_folder, 'performance_summary.png')
+    plt.savefig(summary_path, dpi=300, bbox_inches='tight')
+    plt.close()
+
+
+def create_aircraft_readme(aircraft: Aircraft, aircraft_folder: str, folder_name: str):
+    """Create a README file with aircraft specifications and analysis results."""
+    from src import PerformanceAnalyzer, FlightEnvelope
+    
+    analyzer = PerformanceAnalyzer(aircraft)
+    envelope = FlightEnvelope(aircraft)
+    
+    # Calculate performance metrics
+    optimal_aoa = analyzer.find_optimal_angle_of_attack()
+    max_ld = aircraft.calculate_lift_drag_ratio(optimal_aoa)
+    stall_speed_sl = envelope.calculate_stall_speed(0, aircraft.mass.max_takeoff_weight)
+    stall_speed_10k = envelope.calculate_stall_speed(10000, aircraft.mass.max_takeoff_weight)
+    service_ceiling = envelope.calculate_service_ceiling(aircraft.mass.max_takeoff_weight)
+    range_km = analyzer.calculate_range(10000, 200, aircraft.mass.fuel_capacity)
+    endurance_hrs = analyzer.calculate_endurance(8000, aircraft.mass.fuel_capacity)
+    takeoff_data = analyzer.analyze_takeoff_performance(3000)
+    
+    # Wing loading and other derived parameters
+    wing_loading = aircraft.mass.max_takeoff_weight * 9.81 / aircraft.geometry.wing_area
+    fuel_fraction = aircraft.mass.fuel_capacity / aircraft.mass.max_takeoff_weight
+    payload_fraction = aircraft.mass.payload_capacity / aircraft.mass.max_takeoff_weight
+    
+    # Create README content
+    readme_content = f"""# {aircraft.name}
+
+**Custom Aircraft Design Analysis**  
+Generated: {folder_name.split('_')[-2]}_{folder_name.split('_')[-1]}
+
+## Aircraft Specifications
+
+### Geometric Properties
+- **Wing Span**: {aircraft.geometry.wing_span:.1f} m
+- **Wing Area**: {aircraft.geometry.wing_area:.1f} m²
+- **Wing Chord**: {aircraft.geometry.wing_chord:.1f} m
+- **Aspect Ratio**: {aircraft.geometry.aspect_ratio:.1f}
+- **Sweep Angle**: {aircraft.geometry.sweep_angle:.1f}°
+- **Dihedral Angle**: {aircraft.geometry.dihedral_angle:.1f}°
+- **Taper Ratio**: {aircraft.geometry.taper_ratio:.2f}
+- **Thickness Ratio**: {aircraft.geometry.thickness_ratio:.2f}
+- **Fuselage Length**: {aircraft.geometry.fuselage_length:.1f} m
+- **Fuselage Diameter**: {aircraft.geometry.fuselage_diameter:.1f} m
+
+### Mass Properties
+- **Empty Weight**: {aircraft.mass.empty_weight:.0f} kg
+- **Fuel Capacity**: {aircraft.mass.fuel_capacity:.0f} kg
+- **Payload Capacity**: {aircraft.mass.payload_capacity:.0f} kg
+- **Max Takeoff Weight**: {aircraft.mass.max_takeoff_weight:.0f} kg
+
+### Derived Parameters
+- **Wing Loading**: {wing_loading:.0f} N/m²
+- **Fuel Fraction**: {fuel_fraction:.1%}
+- **Payload Fraction**: {payload_fraction:.1%}
+
+## Performance Analysis
+
+### Aerodynamic Performance
+- **Optimal Angle of Attack**: {optimal_aoa:.1f}°
+- **Maximum L/D Ratio**: {max_ld:.1f}
+- **Stall Speed (Sea Level)**: {stall_speed_sl:.1f} m/s ({stall_speed_sl*3.6:.0f} km/h)
+- **Stall Speed (10km Altitude)**: {stall_speed_10k:.1f} m/s ({stall_speed_10k*3.6:.0f} km/h)
+
+### Mission Performance
+- **Estimated Range**: {range_km:.0f} km
+- **Estimated Endurance**: {endurance_hrs:.1f} hours
+- **Service Ceiling**: {service_ceiling:.0f} m ({service_ceiling/1000:.1f} km)
+- **Takeoff Distance**: {takeoff_data['total_distance']:.0f} m
+
+## Design Assessment
+
+### Strengths
+"""
+    
+    # Add design assessment
+    if aircraft.geometry.aspect_ratio > 8:
+        readme_content += "- High aspect ratio provides excellent fuel efficiency\n"
+    elif aircraft.geometry.aspect_ratio < 5:
+        readme_content += "- Low aspect ratio enables high maneuverability\n"
+    else:
+        readme_content += "- Moderate aspect ratio balances efficiency and maneuverability\n"
+    
+    if aircraft.geometry.sweep_angle > 20:
+        readme_content += "- Swept wing design suitable for high-speed flight\n"
+    elif aircraft.geometry.sweep_angle < 5:
+        readme_content += "- Straight wing provides excellent low-speed handling\n"
+    else:
+        readme_content += "- Moderate sweep balances speed and handling characteristics\n"
+    
+    if wing_loading > 4000:
+        readme_content += "- High wing loading enables fast cruise speeds\n"
+    elif wing_loading < 1500:
+        readme_content += "- Low wing loading allows short runway operations\n"
+    else:
+        readme_content += "- Moderate wing loading provides versatile performance\n"
+    
+    readme_content += f"""
+### Trade-offs
+- Range vs Payload: Current fuel fraction of {fuel_fraction:.1%} prioritizes {'range' if fuel_fraction > 0.3 else 'payload'}
+- Speed vs Efficiency: Design optimized for {'speed' if aircraft.geometry.sweep_angle > 15 else 'efficiency'}
+- Runway Performance: {'Long runway required' if takeoff_data['total_distance'] > 2000 else 'Good short-field performance'}
+
+## Generated Visualizations
+
+### Performance Plots
+- `drag_polar.png` - Lift vs drag coefficient relationship
+- `ld_vs_aoa.png` - Lift-to-drag ratio vs angle of attack
+- `vn_diagram.png` - Flight envelope (velocity vs load factor)
+- `performance_envelope.png` - 3D performance surface
+- `climb_performance.png` - Rate of climb vs altitude
+
+### 3D Visualizations
+- `aircraft_3d.png` - Static 3D aircraft model
+- `aircraft_interactive.html` - Interactive 3D model (open in browser)
+
+### Summary
+- `performance_summary.png` - Comprehensive performance dashboard
+
+## Usage Notes
+
+1. **Interactive 3D Model**: Open `aircraft_interactive.html` in your web browser to explore the 3D model
+2. **Performance Analysis**: Review all PNG files for detailed performance characteristics
+3. **Design Iteration**: Use this analysis to refine your design parameters
+
+---
+*Generated by Aircraft Design System v1.0*
+"""
+    
+    # Write README file
+    readme_path = os.path.join(aircraft_folder, 'README.md')
+    with open(readme_path, 'w') as f:
+        f.write(readme_content)
 
 
 def compare_with_reference_aircraft(custom_aircraft: Aircraft):
@@ -282,8 +613,8 @@ def main():
         # Show analysis
         show_aircraft_analysis(custom_aircraft)
         
-        # Create 3D visualization
-        create_3d_visualization(custom_aircraft)
+        # Create comprehensive performance analysis
+        create_comprehensive_analysis(custom_aircraft)
         
         # Ask if user wants comparison
         print(f"\n" + "=" * 50)
