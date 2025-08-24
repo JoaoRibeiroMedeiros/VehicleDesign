@@ -23,6 +23,7 @@ from .design_optimizer import (
     WingLoadingConstraint
 )
 from .visualization import AircraftVisualizer, compare_aircraft_designs, create_interactive_dashboard
+from .aircraft_3d import Aircraft3DVisualizer, create_aircraft_comparison_3d, create_interactive_aircraft_gallery
 
 __version__ = "1.0.0"
 __author__ = "Aircraft Design System"
@@ -42,5 +43,8 @@ __all__ = [
     'StallSpeedConstraint', 'TakeoffDistanceConstraint', 'WingLoadingConstraint',
     
     # Visualization
-    'AircraftVisualizer', 'compare_aircraft_designs', 'create_interactive_dashboard'
+    'AircraftVisualizer', 'compare_aircraft_designs', 'create_interactive_dashboard',
+    
+    # 3D Visualization
+    'Aircraft3DVisualizer', 'create_aircraft_comparison_3d', 'create_interactive_aircraft_gallery'
 ]
