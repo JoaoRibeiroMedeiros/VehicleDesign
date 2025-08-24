@@ -66,6 +66,13 @@ VehicleDesign/
 - **Comparison Charts**: Multi-aircraft design analysis
 - **Interactive Dashboards**: Plotly-based dynamic visualizations
 
+### ✈️ 3D Aircraft Visualization
+- **Realistic 3D Models**: See actual aircraft shapes and proportions
+- **Interactive 3D Gallery**: Rotate, zoom, and explore aircraft in your browser
+- **Design Comparison**: Side-by-side 3D views of different aircraft types
+- **Custom Aircraft Designer**: Create and visualize your own aircraft designs
+- **Parameter Impact**: Understand how design choices affect aircraft appearance
+
 ## Installation
 
 1. Clone or download the repository
@@ -199,6 +206,12 @@ python scripts/explore_parameters.py
 
 # Test system functionality
 python scripts/test_system.py
+
+# View aircraft in 3D (NEW!)
+python scripts/view_aircraft_3d.py
+
+# Design your own aircraft interactively (NEW!)
+python scripts/design_your_aircraft.py
 ```
 
 This will generate:
@@ -235,12 +248,15 @@ The system includes three pre-configured aircraft types:
 - **`performance_analysis.py`**: Range, endurance, and performance calculations
 - **`design_optimizer.py`**: Multi-objective optimization framework
 - **`visualization.py`**: Plotting and visualization tools with automatic path management
+- **`aircraft_3d.py`**: 3D aircraft geometry generation and visualization
 
 ### Executable Scripts (`scripts/`)
 - **`test_system.py`**: System validation and functionality testing
 - **`run_examples.py`**: Comprehensive analysis examples and demonstrations
 - **`interactive_demo.py`**: Web-based interactive visualizations
 - **`explore_parameters.py`**: Interactive parameter documentation and insights
+- **`view_aircraft_3d.py`**: 3D aircraft visualization and comparison
+- **`design_your_aircraft.py`**: Interactive aircraft designer with 3D preview
 
 ### Generated Content (`visualizations/`)
 - **Static plots**: PNG files with performance analysis charts
