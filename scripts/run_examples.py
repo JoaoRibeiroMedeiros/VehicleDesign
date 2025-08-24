@@ -199,40 +199,54 @@ def example_visualization():
     # Create sample aircraft
     aircraft_list = create_sample_aircraft()
     
+    # Create organized folder structure
+    visualizations_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'visualizations')
+    reference_dir = os.path.join(visualizations_dir, 'reference_aircraft')
+    comparisons_dir = os.path.join(visualizations_dir, 'comparisons')
+    os.makedirs(comparisons_dir, exist_ok=True)
+    
+    aircraft_folder_names = ['commercial_airliner', 'general_aviation', 'fighter_jet']
+    
     print("Generating visualizations...")
     
     # Individual aircraft analysis
-    for i, aircraft in enumerate(aircraft_list):
+    for i, (aircraft, folder_name) in enumerate(zip(aircraft_list, aircraft_folder_names)):
         print(f"\nGenerating plots for {aircraft.name}...")
         
-        visualizer = AircraftVisualizer(aircraft)
+        # Create aircraft-specific folder
+        aircraft_folder = os.path.join(reference_dir, folder_name)
+        os.makedirs(aircraft_folder, exist_ok=True)
         
-        # Create plots (save to visualizations folder)
+        # Create visualizer and set output folder
+        visualizer = AircraftVisualizer(aircraft)
+        visualizer.set_output_folder(aircraft_folder)
+        
+        # Create plots (save to aircraft-specific folder)
         try:
             # Drag polar
-            fig1 = visualizer.plot_drag_polar(f'drag_polar_{i+1}.png')
-            print(f"  - Drag polar saved as 'drag_polar_{i+1}.png'")
+            fig1 = visualizer.plot_drag_polar('drag_polar.png')
+            print(f"  - Drag polar saved in '{folder_name}/'")
             plt.close(fig1)
             
             # Lift/drag vs AoA
-            fig2 = visualizer.plot_lift_drag_vs_aoa(f'ld_vs_aoa_{i+1}.png')
-            print(f"  - L/D vs AoA saved as 'ld_vs_aoa_{i+1}.png'")
+            fig2 = visualizer.plot_lift_drag_vs_aoa('ld_vs_aoa.png')
+            print(f"  - L/D vs AoA saved in '{folder_name}/'")
             plt.close(fig2)
             
             # V-n diagram
-            fig3 = visualizer.plot_v_n_diagram(save_path=f'vn_diagram_{i+1}.png')
-            print(f"  - V-n diagram saved as 'vn_diagram_{i+1}.png'")
+            fig3 = visualizer.plot_v_n_diagram(save_path='vn_diagram.png')
+            print(f"  - V-n diagram saved in '{folder_name}/'")
             plt.close(fig3)
             
             # Performance envelope
-            fig4 = visualizer.plot_performance_envelope(f'performance_envelope_{i+1}.png')
-            print(f"  - Performance envelope saved as 'performance_envelope_{i+1}.png'")
+            fig4 = visualizer.plot_performance_envelope('performance_envelope.png')
+            print(f"  - Performance envelope saved in '{folder_name}/'")
             plt.close(fig4)
             
             # Climb performance (with estimated thrust)
             thrust_estimates = [200000, 5000, 120000]  # N, rough estimates
-            fig5 = visualizer.plot_climb_performance(thrust_estimates[i], f'climb_performance_{i+1}.png')
-            print(f"  - Climb performance saved as 'climb_performance_{i+1}.png'")
+            fig5 = visualizer.plot_climb_performance(thrust_estimates[i], 'climb_performance.png')
+            print(f"  - Climb performance saved in '{folder_name}/'")
             plt.close(fig5)
             
         except Exception as e:
@@ -241,8 +255,10 @@ def example_visualization():
     # Comparison plot
     try:
         print("\nGenerating comparison plot...")
-        fig_comp = compare_aircraft_designs(aircraft_list, 'aircraft_comparison.png')
-        print("  - Aircraft comparison saved as 'aircraft_comparison.png'")
+        fig_comp = compare_aircraft_designs(aircraft_list, None)  # Don't auto-save
+        comparison_path = os.path.join(comparisons_dir, 'aircraft_comparison.png')
+        fig_comp.savefig(comparison_path, dpi=300, bbox_inches='tight')
+        print("  - Aircraft comparison saved in 'comparisons/'")
         plt.close(fig_comp)
     except Exception as e:
         print(f"  Error generating comparison plot: {e}")
@@ -305,13 +321,15 @@ def example_flight_envelope_analysis():
     
     plt.tight_layout()
     
-    # Save to visualizations folder
+    # Save to examples folder
     visualizations_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'visualizations')
-    save_path = os.path.join(visualizations_dir, 'flight_envelope_analysis.png')
+    examples_dir = os.path.join(visualizations_dir, 'examples')
+    os.makedirs(examples_dir, exist_ok=True)
+    save_path = os.path.join(examples_dir, 'flight_envelope_analysis.png')
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close()
     
-    print("  - Flight envelope analysis saved as 'flight_envelope_analysis.png'")
+    print("  - Flight envelope analysis saved in 'examples/'")
 
 
 def run_all_examples():
