@@ -159,42 +159,53 @@ def main():
     print("=" * 50)
     print("Generating interactive visualizations...")
     
-    # Get visualizations directory path
+    # Create organized folder structure
     visualizations_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'visualizations')
-    os.makedirs(visualizations_dir, exist_ok=True)
+    comparisons_dir = os.path.join(visualizations_dir, 'comparisons')
+    examples_dir = os.path.join(visualizations_dir, 'examples')
+    reference_dir = os.path.join(visualizations_dir, 'reference_aircraft')
+    
+    os.makedirs(comparisons_dir, exist_ok=True)
+    os.makedirs(examples_dir, exist_ok=True)
     
     # Create comparison dashboard
     print("1. Creating aircraft comparison dashboard...")
     comparison_fig = create_interactive_comparison()
-    comparison_path = os.path.join(visualizations_dir, "aircraft_comparison_interactive.html")
+    comparison_path = os.path.join(comparisons_dir, "aircraft_comparison_interactive.html")
     comparison_fig.write_html(comparison_path)
-    print("   ✓ Saved as 'aircraft_comparison_interactive.html'")
+    print("   ✓ Saved in 'comparisons/'")
     
     # Create 3D performance surface
     print("2. Creating 3D performance surface...")
     surface_fig = create_3d_performance_surface()
-    surface_path = os.path.join(visualizations_dir, "performance_3d_interactive.html")
+    surface_path = os.path.join(examples_dir, "performance_3d_interactive.html")
     surface_fig.write_html(surface_path)
-    print("   ✓ Saved as 'performance_3d_interactive.html'")
+    print("   ✓ Saved in 'examples/'")
     
     # Create individual aircraft dashboards
     aircraft_list = create_sample_aircraft()
-    for i, aircraft in enumerate(aircraft_list):
+    aircraft_folder_names = ['commercial_airliner', 'general_aviation', 'fighter_jet']
+    
+    for aircraft, folder_name in zip(aircraft_list, aircraft_folder_names):
         print(f"3. Creating dashboard for {aircraft.name}...")
+        
+        # Create aircraft-specific folder
+        aircraft_folder = os.path.join(reference_dir, folder_name)
+        os.makedirs(aircraft_folder, exist_ok=True)
+        
         dashboard_fig = create_interactive_dashboard(aircraft)
-        filename = f"dashboard_{aircraft.name.lower().replace(' ', '_')}.html"
-        dashboard_path = os.path.join(visualizations_dir, filename)
+        dashboard_path = os.path.join(aircraft_folder, "dashboard_interactive.html")
         dashboard_fig.write_html(dashboard_path)
-        print(f"   ✓ Saved as '{filename}'")
+        print(f"   ✓ Saved in 'reference_aircraft/{folder_name}/'")
     
     print("\n" + "=" * 50)
     print("✅ Interactive visualizations created!")
-    print("\nGenerated files in 'visualizations/' folder:")
-    print("- aircraft_comparison_interactive.html")
-    print("- performance_3d_interactive.html")
-    print("- dashboard_commercial_airliner.html")
-    print("- dashboard_general_aviation.html")
-    print("- dashboard_fighter_jet.html")
+    print("\nGenerated files in organized folders:")
+    print("- comparisons/aircraft_comparison_interactive.html")
+    print("- examples/performance_3d_interactive.html")
+    print("- reference_aircraft/commercial_airliner/dashboard_interactive.html")
+    print("- reference_aircraft/general_aviation/dashboard_interactive.html")
+    print("- reference_aircraft/fighter_jet/dashboard_interactive.html")
     print("\n📖 Open any of these HTML files in your web browser")
     print("   to explore the interactive visualizations!")
     
@@ -204,7 +215,7 @@ def main():
         print("\n🌐 Opening main comparison dashboard in your browser...")
         webbrowser.open(comparison_path)
     except:
-        print(f"\n💡 Manually open '{comparison_path}' in your browser")
+        print(f"\n💡 Manually open the comparison file in your browser")
 
 
 if __name__ == "__main__":
