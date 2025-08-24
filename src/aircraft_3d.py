@@ -32,6 +32,12 @@ class Aircraft3DVisualizer:
         """
         self.aircraft = aircraft
         self.geom = aircraft.geometry
+        self._aircraft_folder = None
+    
+    def set_output_folder(self, folder_path: str):
+        """Set the output folder for this aircraft's 3D visualizations."""
+        self._aircraft_folder = folder_path
+        os.makedirs(folder_path, exist_ok=True)
         
     def generate_wing_geometry(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -295,8 +301,12 @@ class Aircraft3DVisualizer:
         plt.tight_layout()
         
         if save_path:
-            visualizations_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'visualizations')
-            full_path = os.path.join(visualizations_dir, save_path)
+            # Use aircraft-specific folder if available
+            if hasattr(self, '_aircraft_folder') and self._aircraft_folder:
+                full_path = os.path.join(self._aircraft_folder, save_path)
+            else:
+                visualizations_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'visualizations')
+                full_path = os.path.join(visualizations_dir, save_path)
             plt.savefig(full_path, dpi=300, bbox_inches='tight')
         
         return fig
