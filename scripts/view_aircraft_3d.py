@@ -26,16 +26,27 @@ def create_individual_3d_views():
     
     aircraft_list = create_sample_aircraft()
     
+    # Create organized folder structure
+    visualizations_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'visualizations')
+    reference_dir = os.path.join(visualizations_dir, 'reference_aircraft')
+    os.makedirs(reference_dir, exist_ok=True)
+    
     for i, aircraft in enumerate(aircraft_list, 1):
         print(f"Generating 3D view for {aircraft.name}...")
         
+        # Create aircraft-specific folder
+        safe_name = aircraft.name.lower().replace(" ", "_")
+        aircraft_folder = os.path.join(reference_dir, safe_name)
+        os.makedirs(aircraft_folder, exist_ok=True)
+        
         visualizer = Aircraft3DVisualizer(aircraft)
+        visualizer.set_output_folder(aircraft_folder)
         
         # Create matplotlib 3D plot
-        fig = visualizer.plot_3d_aircraft_matplotlib(f'aircraft_3d_{i}_{aircraft.name.lower().replace(" ", "_")}.png')
+        fig = visualizer.plot_3d_aircraft_matplotlib('aircraft_3d.png')
         plt.close(fig)
         
-        print(f"  ✓ Saved as 'aircraft_3d_{i}_{aircraft.name.lower().replace(' ', '_')}.png'")
+        print(f"  ✓ Saved in 'reference_aircraft/{safe_name}/'")
     
     print("\n✅ Individual 3D views created successfully!")
 
@@ -47,11 +58,20 @@ def create_comparison_3d_view():
     
     aircraft_list = create_sample_aircraft()
     
+    # Create comparisons folder
+    visualizations_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'visualizations')
+    comparisons_dir = os.path.join(visualizations_dir, 'comparisons')
+    os.makedirs(comparisons_dir, exist_ok=True)
+    
     print("Generating side-by-side 3D comparison...")
-    fig = create_aircraft_comparison_3d(aircraft_list, 'aircraft_3d_comparison.png')
+    fig = create_aircraft_comparison_3d(aircraft_list, None)  # Don't auto-save
+    
+    # Save in comparisons folder
+    comparison_path = os.path.join(comparisons_dir, 'aircraft_3d_comparison.png')
+    fig.savefig(comparison_path, dpi=300, bbox_inches='tight')
     plt.close(fig)
     
-    print("  ✓ Saved as 'aircraft_3d_comparison.png'")
+    print("  ✓ Saved in 'comparisons/aircraft_3d_comparison.png'")
     print("\n✅ 3D comparison created successfully!")
 
 
