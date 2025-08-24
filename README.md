@@ -2,6 +2,31 @@
 
 A comprehensive Python framework for exploring airplane designs and testing flight conditions. This system provides tools for aerodynamic analysis, performance evaluation, design optimization, and advanced visualization.
 
+## 📁 Project Structure
+
+```
+VehicleDesign/
+├── src/                          # Core modules (importable library)
+│   ├── __init__.py              # Package initialization with exports
+│   ├── aircraft.py              # Aircraft design classes and geometry
+│   ├── flight_conditions.py     # Atmospheric modeling and flight parameters
+│   ├── performance_analysis.py  # Performance calculations and analysis
+│   ├── design_optimizer.py      # Multi-objective optimization framework
+│   └── visualization.py         # Plotting and visualization tools
+├── scripts/                      # Executable scripts (inherit from src)
+│   ├── __init__.py              # Scripts package initialization
+│   ├── test_system.py           # System validation and testing
+│   ├── run_examples.py          # Comprehensive analysis examples
+│   └── interactive_demo.py      # Interactive web-based visualizations
+├── visualizations/               # All generated plots and dashboards
+│   ├── *.png                    # Static performance plots
+│   └── *.html                   # Interactive web dashboards
+├── .venv/                        # Virtual environment
+├── requirements.txt              # Python dependencies
+├── activate.sh                   # Environment activation script
+└── README.md                     # This file
+```
+
 ## Features
 
 ### 🛩️ Aircraft Design Analysis
