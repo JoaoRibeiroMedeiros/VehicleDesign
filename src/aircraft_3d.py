@@ -262,11 +262,21 @@ class Aircraft3DVisualizer:
         ax.set_zlabel('Z (Height) [m]', fontsize=12)
         ax.set_title(f'3D Aircraft Geometry - {self.aircraft.name}', fontsize=14, fontweight='bold')
         
-        # Set equal aspect ratio
+        # Set equal aspect ratio with 1:1:1 scaling
         max_range = max(self.geom.fuselage_length, self.geom.wing_span) / 2
-        ax.set_xlim([-max_range*0.2, max_range*1.2])
-        ax.set_ylim([-max_range*1.1, max_range*1.1])
-        ax.set_zlim([-max_range*0.3, max_range*0.3])
+        
+        # Calculate proper bounds for 1:1 aspect ratio
+        x_center = self.geom.fuselage_length / 2
+        y_center = 0
+        z_center = 0
+        
+        # Use the same range for all axes to ensure 1:1:1 scaling
+        ax.set_xlim([x_center - max_range*1.2, x_center + max_range*1.2])
+        ax.set_ylim([y_center - max_range*1.2, y_center + max_range*1.2])
+        ax.set_zlim([z_center - max_range*0.6, z_center + max_range*0.6])
+        
+        # Force equal aspect ratio
+        ax.set_box_aspect([2.4, 2.4, 1.2])  # Maintain proportional box but equal scaling
         
         # Add parameter annotations
         wing_pos_factor = self._calculate_wing_position_factor()
@@ -336,8 +346,13 @@ class Aircraft3DVisualizer:
                 hovertemplate='Tail<br>X: %{x:.1f}m<br>Y: %{y:.1f}m<br>Z: %{z:.1f}m<extra></extra>'
             ))
         
-        # Update layout
+        # Update layout with proper 1:1:1 scaling
         max_range = max(self.geom.fuselage_length, self.geom.wing_span) / 2
+        
+        # Calculate proper bounds for 1:1 aspect ratio
+        x_center = self.geom.fuselage_length / 2
+        y_center = 0
+        z_center = 0
         
         fig.update_layout(
             title=f'Interactive 3D Aircraft Model - {self.aircraft.name}',
@@ -345,10 +360,11 @@ class Aircraft3DVisualizer:
                 xaxis_title='X - Length (m)',
                 yaxis_title='Y - Span (m)',
                 zaxis_title='Z - Height (m)',
-                xaxis=dict(range=[-max_range*0.2, max_range*1.2]),
-                yaxis=dict(range=[-max_range*1.1, max_range*1.1]),
-                zaxis=dict(range=[-max_range*0.3, max_range*0.3]),
-                aspectmode='cube'
+                xaxis=dict(range=[x_center - max_range*1.2, x_center + max_range*1.2]),
+                yaxis=dict(range=[y_center - max_range*1.2, y_center + max_range*1.2]),
+                zaxis=dict(range=[z_center - max_range*0.6, z_center + max_range*0.6]),
+                aspectmode='manual',
+                aspectratio=dict(x=1, y=1, z=0.5)  # True 1:1 scaling for X:Y, Z compressed for better view
             ),
             width=800,
             height=600
@@ -397,14 +413,27 @@ def create_aircraft_comparison_3d(aircraft_list: List[Aircraft], save_path: Opti
         ax.set_ylabel('Span (m)')
         ax.set_zlabel('Height (m)')
         
-        # Set consistent scale for comparison
+        # Set consistent scale for comparison with 1:1:1 scaling
         max_span = max([a.geometry.wing_span for a in aircraft_list])
         max_length = max([a.geometry.fuselage_length for a in aircraft_list])
         max_range = max(max_span, max_length) / 2
         
-        ax.set_xlim([-max_range*0.2, max_range*1.2])
-        ax.set_ylim([-max_range*1.1, max_range*1.1])
-        ax.set_zlim([-max_range*0.3, max_range*0.3])
+        # Calculate proper bounds for 1:1 aspect ratio
+        x_center = aircraft.geometry.fuselage_length / 2
+        y_center = 0
+        z_center = 0
+        
+        # Use the same range for all axes to ensure 1:1:1 scaling
+        ax.set_xlim([x_center - max_range*1.2, x_center + max_range*1.2])
+        ax.set_ylim([y_center - max_range*1.2, y_center + max_range*1.2])
+        ax.set_zlim([z_center - max_range*0.6, z_center + max_range*0.6])
+        
+        # Force equal aspect ratio
+        try:
+            ax.set_box_aspect([2.4, 2.4, 1.2])  # Maintain proportional box but equal scaling
+        except AttributeError:
+            # Fallback for older matplotlib versions
+            ax.set_aspect('equal')
         
         # Add key parameters
         info_text = (f"Span: {aircraft.geometry.wing_span:.1f}m\n"
