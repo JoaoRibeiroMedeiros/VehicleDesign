@@ -21,6 +21,33 @@ from .performance_analysis import PerformanceAnalyzer
 VISUALIZATIONS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'visualizations')
 os.makedirs(VISUALIZATIONS_DIR, exist_ok=True)
 
+def get_aircraft_folder(aircraft_name: str, is_custom: bool = False) -> str:
+    """
+    Get or create organized folder structure for aircraft visualizations.
+    
+    Args:
+        aircraft_name: Name of the aircraft
+        is_custom: Whether this is a custom designed aircraft
+        
+    Returns:
+        Path to the aircraft's visualization folder
+    """
+    # Clean aircraft name for folder
+    safe_name = aircraft_name.lower().replace(" ", "_").replace("/", "_").replace("\\", "_")
+    
+    if is_custom:
+        # Custom aircraft go in custom_designs folder with timestamp
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        folder_name = f"{safe_name}_{timestamp}"
+        aircraft_dir = os.path.join(VISUALIZATIONS_DIR, 'custom_designs', folder_name)
+    else:
+        # Reference aircraft go in reference_aircraft folder
+        aircraft_dir = os.path.join(VISUALIZATIONS_DIR, 'reference_aircraft', safe_name)
+    
+    os.makedirs(aircraft_dir, exist_ok=True)
+    return aircraft_dir
+
 
 class AircraftVisualizer:
     """
@@ -30,6 +57,12 @@ class AircraftVisualizer:
     def __init__(self, aircraft: Aircraft):
         self.aircraft = aircraft
         self.analyzer = PerformanceAnalyzer(aircraft)
+        self._aircraft_folder = None
+    
+    def set_output_folder(self, folder_path: str):
+        """Set the output folder for this aircraft's visualizations."""
+        self._aircraft_folder = folder_path
+        os.makedirs(folder_path, exist_ok=True)
         
     def plot_drag_polar(self, save_path: Optional[str] = None) -> plt.Figure:
         """
@@ -70,7 +103,11 @@ class AircraftVisualizer:
         
         plt.tight_layout()
         if save_path:
-            full_path = os.path.join(VISUALIZATIONS_DIR, save_path)
+            # Use aircraft-specific folder if available
+            if hasattr(self, '_aircraft_folder') and self._aircraft_folder:
+                full_path = os.path.join(self._aircraft_folder, save_path)
+            else:
+                full_path = os.path.join(VISUALIZATIONS_DIR, save_path)
             plt.savefig(full_path, dpi=300, bbox_inches='tight')
         
         return fig
@@ -130,7 +167,11 @@ class AircraftVisualizer:
         
         plt.tight_layout()
         if save_path:
-            full_path = os.path.join(VISUALIZATIONS_DIR, save_path)
+            # Use aircraft-specific folder if available
+            if hasattr(self, '_aircraft_folder') and self._aircraft_folder:
+                full_path = os.path.join(self._aircraft_folder, save_path)
+            else:
+                full_path = os.path.join(VISUALIZATIONS_DIR, save_path)
             plt.savefig(full_path, dpi=300, bbox_inches='tight')
         
         return fig
@@ -170,7 +211,11 @@ class AircraftVisualizer:
         ax.legend()
         plt.tight_layout()
         if save_path:
-            full_path = os.path.join(VISUALIZATIONS_DIR, save_path)
+            # Use aircraft-specific folder if available
+            if hasattr(self, '_aircraft_folder') and self._aircraft_folder:
+                full_path = os.path.join(self._aircraft_folder, save_path)
+            else:
+                full_path = os.path.join(VISUALIZATIONS_DIR, save_path)
             plt.savefig(full_path, dpi=300, bbox_inches='tight')
         
         return fig
@@ -235,7 +280,11 @@ class AircraftVisualizer:
         
         plt.tight_layout()
         if save_path:
-            full_path = os.path.join(VISUALIZATIONS_DIR, save_path)
+            # Use aircraft-specific folder if available
+            if hasattr(self, '_aircraft_folder') and self._aircraft_folder:
+                full_path = os.path.join(self._aircraft_folder, save_path)
+            else:
+                full_path = os.path.join(VISUALIZATIONS_DIR, save_path)
             plt.savefig(full_path, dpi=300, bbox_inches='tight')
         
         return fig
@@ -284,7 +333,11 @@ class AircraftVisualizer:
         
         plt.tight_layout()
         if save_path:
-            full_path = os.path.join(VISUALIZATIONS_DIR, save_path)
+            # Use aircraft-specific folder if available
+            if hasattr(self, '_aircraft_folder') and self._aircraft_folder:
+                full_path = os.path.join(self._aircraft_folder, save_path)
+            else:
+                full_path = os.path.join(VISUALIZATIONS_DIR, save_path)
             plt.savefig(full_path, dpi=300, bbox_inches='tight')
         
         return fig
