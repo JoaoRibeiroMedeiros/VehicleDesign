@@ -13,9 +13,16 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 import os
 from typing import Dict, List, Tuple, Optional
-from .aircraft import Aircraft
-from .flight_conditions import FlightConditions, FlightEnvelope
-from .performance_analysis import PerformanceAnalyzer
+
+# Handle imports for both package and direct execution
+try:
+    from .aircraft import Aircraft
+    from .flight_conditions import FlightConditions, FlightEnvelope
+    from .performance_analysis import PerformanceAnalyzer
+except ImportError:
+    from aircraft import Aircraft
+    from flight_conditions import FlightConditions, FlightEnvelope
+    from performance_analysis import PerformanceAnalyzer
 
 # Create visualizations directory if it doesn't exist
 VISUALIZATIONS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'visualizations')

@@ -8,8 +8,14 @@ to meet specific performance requirements.
 import numpy as np
 from scipy.optimize import minimize, differential_evolution
 from typing import Dict, List, Tuple, Callable, Optional
-from .aircraft import Aircraft, AircraftGeometry, AircraftMass
-from .performance_analysis import PerformanceAnalyzer
+
+# Handle imports for both package and direct execution
+try:
+    from .aircraft import Aircraft, AircraftGeometry, AircraftMass
+    from .performance_analysis import PerformanceAnalyzer
+except ImportError:
+    from aircraft import Aircraft, AircraftGeometry, AircraftMass
+    from performance_analysis import PerformanceAnalyzer
 
 
 class DesignObjective:
@@ -105,7 +111,10 @@ class StallSpeedConstraint(DesignConstraint):
         self.altitude = altitude
     
     def evaluate(self, aircraft: Aircraft) -> float:
-        from .flight_conditions import AtmosphericConditions
+        try:
+            from .flight_conditions import AtmosphericConditions
+        except ImportError:
+            from flight_conditions import AtmosphericConditions
         
         atm = AtmosphericConditions.standard_atmosphere(self.altitude)
         weight = aircraft.mass.max_takeoff_weight * 9.81

@@ -8,8 +8,14 @@ including range, endurance, climb performance, and optimization.
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Dict, List, Tuple, Optional
-from .aircraft import Aircraft
-from .flight_conditions import FlightConditions, AtmosphericConditions
+
+# Handle imports for both package and direct execution
+try:
+    from .aircraft import Aircraft
+    from .flight_conditions import FlightConditions, AtmosphericConditions
+except ImportError:
+    from aircraft import Aircraft
+    from flight_conditions import FlightConditions, AtmosphericConditions
 
 
 class PerformanceAnalyzer:
