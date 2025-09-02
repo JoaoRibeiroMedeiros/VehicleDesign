@@ -1,6 +1,18 @@
 # Aircraft Design Exploration System
 
-A comprehensive Python framework for exploring airplane designs and testing flight conditions. This system provides tools for aerodynamic analysis, performance evaluation, design optimization, and advanced visualization.
+A comprehensive Python framework for exploring airplane designs and testing flight conditions. This system provides tools for aerodynamic analysis, performance evaluation, design optimization, advanced visualization, and **real-time flight feasibility assessment**.
+
+## ✈️ New: Flight Feasibility Assessment
+
+The system now includes **comprehensive flight feasibility analysis** that automatically evaluates whether your aircraft design will fly safely and efficiently. Features include:
+
+- **🎯 Real-time scoring (0-100 points)** based on aerospace engineering principles
+- **🟢🟡🔴 Color-coded assessments** for immediate visual feedback
+- **🚨 Critical issue detection** with detailed red flags
+- **💡 Smart improvement suggestions** for problematic designs
+- **📊 Weighted scoring system** prioritizing safety-critical metrics
+
+**📖 Complete Documentation:** See [`docs/FLIGHT_FEASIBILITY.md`](docs/FLIGHT_FEASIBILITY.md) for all equations, criteria, and assessment methods.
 
 ## 📁 Project Structure
 
@@ -12,12 +24,20 @@ VehicleDesign/
 │   ├── flight_conditions.py     # Atmospheric modeling and flight parameters
 │   ├── performance_analysis.py  # Performance calculations and analysis
 │   ├── design_optimizer.py      # Multi-objective optimization framework
-│   └── visualization.py         # Plotting and visualization tools
+│   ├── visualization.py         # Plotting and visualization tools
+│   ├── aircraft_3d.py           # 3D aircraft visualization and modeling
+│   └── streamlit_app.py         # Interactive web application interface
 ├── scripts/                      # Executable scripts (inherit from src)
 │   ├── __init__.py              # Scripts package initialization
 │   ├── test_system.py           # System validation and testing
 │   ├── run_examples.py          # Comprehensive analysis examples
-│   └── interactive_demo.py      # Interactive web-based visualizations
+│   ├── interactive_demo.py      # Interactive web-based visualizations
+│   ├── design_your_aircraft.py  # Custom aircraft design wizard
+│   ├── view_aircraft_3d.py      # 3D aircraft visualization examples
+│   ├── explore_parameters.py    # Parameter explanation and examples
+│   └── run_streamlit_app.py     # Streamlit web application launcher
+├── docs/                        # Documentation and guides
+│   └── FLIGHT_FEASIBILITY.md    # Complete flight feasibility guide
 ├── visualizations/               # All generated plots and dashboards
 │   ├── *.png                    # Static performance plots
 │   └── *.html                   # Interactive web dashboards
@@ -297,14 +317,34 @@ The system includes three pre-configured aircraft types:
 - Constraint handling with penalty methods
 - Multi-objective weighted sum approach
 
+## 🚀 Quick Start: Streamlit Web App
+
+**NEW: Interactive Web Interface!** Launch the comprehensive aircraft design studio:
+
+```bash
+# Activate virtual environment
+source .venv/bin/activate
+
+# Launch web application
+python scripts/run_streamlit_app.py
+```
+
+**Features:**
+- **🎛️ Interactive Controls**: Real-time parameter adjustment with sliders
+- **✈️ Flight Feasibility Scoring**: Instant 0-100 assessment with color feedback
+- **📊 Live Performance Analysis**: 4 interactive plot types (drag polar, L/D, envelope, V-n)
+- **🛩️ 3D Visualization**: Realistic aircraft models with 1:1 scaling
+- **⚖️ Design Comparison**: Save and compare multiple designs
+- **🚨 Smart Alerts**: Critical issue detection with improvement suggestions
+
 ## Applications
 
 This system is ideal for:
-- **Educational Purposes**: Learning aircraft design principles
-- **Conceptual Design**: Early-stage aircraft development
-- **Trade Studies**: Comparing design alternatives
-- **Performance Analysis**: Understanding flight characteristics
-- **Research**: Investigating design parameter effects
+- **Educational Purposes**: Learning aircraft design principles with real-time feedback
+- **Conceptual Design**: Early-stage aircraft development with feasibility assessment
+- **Trade Studies**: Comparing design alternatives with systematic scoring
+- **Performance Analysis**: Understanding flight characteristics with interactive tools
+- **Research**: Investigating design parameter effects with comprehensive visualization
 
 ## Limitations
 
