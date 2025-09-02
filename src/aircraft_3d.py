@@ -12,7 +12,12 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import os
 from typing import Dict, List, Tuple, Optional
-from .aircraft import Aircraft
+
+# Handle imports for both package and direct execution
+try:
+    from .aircraft import Aircraft
+except ImportError:
+    from aircraft import Aircraft
 
 
 class Aircraft3DVisualizer:
