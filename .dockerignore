@@ -1,0 +1,71 @@
+# Git files
+.git
+.gitignore
+.github
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Documentation (if not needed in container)
+docs/
+README.md
+
+# Large visualization files (these are generated at runtime)
+visualizations/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Jupyter notebooks (if any)
+*.ipynb
+.ipynb_checkpoints
+
+# Local development files
+activate.sh
+scripts/test_system.py
+scripts/run_examples.py
