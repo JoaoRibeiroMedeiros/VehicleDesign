@@ -1,3 +1,5 @@
 .venv
 activate.sh
 __pycache__/
+deploy/Makefile
+.cursor/mcp.json
