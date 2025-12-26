@@ -71,6 +71,33 @@ st.markdown("""
         border-radius: 0.5rem;
         margin: 1rem 0;
     }
+    .persistent-3d-container {
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border: 2px solid #e9ecef;
+    }
+    .comparison-header {
+        background: linear-gradient(90deg, #1f77b4, #ff7f0e);
+        color: white;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 2px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: #f0f2f6;
+        border-radius: 4px 4px 0px 0px;
+        gap: 1px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -293,7 +320,7 @@ def calculate_performance_metrics(aircraft):
     try:
         # Basic performance metrics
         optimal_aoa = analyzer.find_optimal_angle_of_attack()
-        max_ld = aircraft.calculate_lift_drag_ratio(optimal_aoa, atm_sl)
+        max_ld = aircraft.calculate_lift_drag_ratio(optimal_aoa)
         stall_speed_sl = analyzer.calculate_stall_speed(atm_sl, aircraft.mass.max_takeoff_weight)
         
         # Mission performance
@@ -573,18 +600,18 @@ def create_interactive_plots(aircraft):
         
         # Generate drag polar data
         aoa_range = np.linspace(-5, 20, 50)
-        atm = AtmosphericConditions.standard_atmosphere(0)
         
         cl_values = []
         cd_values = []
         
         for aoa in aoa_range:
             try:
-                cl = aircraft.calculate_lift_coefficient(aoa, atm)
-                cd = aircraft.calculate_drag_coefficient(aoa, atm)
+                cl = aircraft.calculate_lift_coefficient(aoa)
+                cd = aircraft.calculate_drag_coefficient(cl)
                 cl_values.append(cl)
                 cd_values.append(cd)
-            except:
+            except Exception as e:
+                # Skip invalid points or use reasonable defaults
                 cl_values.append(0)
                 cd_values.append(0.1)
         
@@ -735,42 +762,123 @@ def create_interactive_plots(aircraft):
         st.plotly_chart(fig, use_container_width=True)
 
 
-def create_3d_visualization(aircraft, params):
-    """Create 3D aircraft visualization."""
-    st.markdown("## 🛩️ 3D Aircraft Visualization")
-    
+def create_3d_visualization_persistent(aircraft, params):
+    """Create persistent 3D aircraft visualization that maintains state."""
     try:
         visualizer_3d = Aircraft3DVisualizer(aircraft)
         
         # Create interactive 3D plot
         fig = visualizer_3d.create_interactive_3d_plotly()
         
-        # Update layout for Streamlit
+        # Update layout for persistent view
         fig.update_layout(
-            height=600,
-            title=f"3D Model: {params['name']}",
+            height=500,
+            title=f"{params['name']}",
             scene=dict(
                 aspectmode='manual',
                 aspectratio=dict(x=1, y=1, z=0.5),
                 camera=dict(
                     eye=dict(x=1.5, y=1.5, z=1.0)
                 )
-            )
+            ),
+            margin=dict(l=20, r=20, t=40, b=20)
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        # Use session state key to maintain camera position
+        st.plotly_chart(fig, use_container_width=True, key="persistent_3d_view")
         
-        # Display 3D model info
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.info(f"**Wing Span:** {params['wing_span']:.1f} m")
-        with col2:
-            st.info(f"**Fuselage Length:** {params['fuselage_length']:.1f} m")
-        with col3:
-            st.info(f"**Scale:** 1:1 (True proportions)")
+        # Display compact 3D model info
+        st.markdown(f"""
+        **📏 Dimensions:** {params['wing_span']:.1f}m × {params['fuselage_length']:.1f}m  
+        **⚖️ MTOW:** {params['max_takeoff_weight']:,.0f} kg  
+        **📊 AR:** {params['aspect_ratio']:.1f} | **🔄 Sweep:** {params['sweep_angle']:.0f}°
+        """)
         
     except Exception as e:
         st.error(f"Error creating 3D visualization: {e}")
+
+
+def display_saved_designs_summary():
+    """Display summary of saved designs."""
+    if not st.session_state.aircraft_designs:
+        st.info("No saved designs yet. Save your current design to see it here!")
+        return
+    
+    st.markdown("### Saved Aircraft Designs")
+    
+    # Create summary table
+    designs_summary = []
+    for name, design_data in st.session_state.aircraft_designs.items():
+        params = design_data['params']
+        metrics = design_data['metrics']
+        timestamp = design_data['timestamp']
+        
+        summary = {
+            'Name': name,
+            'Saved': timestamp.strftime('%Y-%m-%d %H:%M'),
+            'Span (m)': f"{params['wing_span']:.1f}",
+            'AR': f"{params['aspect_ratio']:.1f}",
+            'MTOW (kg)': f"{params['max_takeoff_weight']:,.0f}",
+        }
+        
+        if metrics:
+            summary.update({
+                'Max L/D': f"{metrics['max_ld']:.1f}",
+                'Stall Speed (km/h)': f"{metrics['stall_speed_kmh']:.0f}",
+                'Range (km)': f"{metrics['range_km']:.0f}"
+            })
+        
+        designs_summary.append(summary)
+    
+    if designs_summary:
+        df = pd.DataFrame(designs_summary)
+        st.dataframe(df, use_container_width=True)
+        
+        # Quick actions
+        st.markdown("### Quick Actions")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            selected_design = st.selectbox(
+                "Load Design:",
+                list(st.session_state.aircraft_designs.keys()),
+                key="load_design_select"
+            )
+            if st.button("📥 Load Selected Design"):
+                load_design_to_current(selected_design)
+        
+        with col2:
+            if len(st.session_state.aircraft_designs) >= 2:
+                if st.button("⚖️ Compare All Designs"):
+                    st.session_state.comparison_mode = True
+                    st.experimental_rerun()
+        
+        # Delete design option
+        with st.expander("🗑️ Delete Designs"):
+            delete_design = st.selectbox(
+                "Select design to delete:",
+                [""] + list(st.session_state.aircraft_designs.keys()),
+                key="delete_design_select"
+            )
+            if delete_design and st.button("🗑️ Delete Selected Design", type="secondary"):
+                del st.session_state.aircraft_designs[delete_design]
+                st.success(f"Deleted design: {delete_design}")
+                st.experimental_rerun()
+
+
+def load_design_to_current(design_name):
+    """Load a saved design as the current design."""
+    if design_name not in st.session_state.aircraft_designs:
+        st.error(f"Design '{design_name}' not found!")
+        return
+    
+    design_data = st.session_state.aircraft_designs[design_name]
+    
+    # Update sidebar parameters (this would require parameter state management)
+    st.info(f"To load '{design_name}', manually adjust the parameters in the sidebar to match the values shown in the table above.")
+    
+    # Note: Full parameter loading would require more complex state management
+    # For now, we show the user the parameters to manually adjust
 
 
 def save_design_to_session(params, aircraft, metrics):
@@ -786,64 +894,328 @@ def save_design_to_session(params, aircraft, metrics):
     st.success(f"Design '{params['name']}' saved to session!")
 
 
-def display_design_comparison():
-    """Display comparison of saved designs."""
+# Old comparison function removed - now using dedicated comparison page
+
+
+def create_comparison_page():
+    """Create dedicated comparison page with side-by-side 3D views."""
+    st.markdown('<div class="comparison-header"><h1>⚖️ Aircraft Design Comparison</h1><p>Compare multiple aircraft designs with side-by-side 3D visualizations and detailed metrics.</p></div>', unsafe_allow_html=True)
+    
     if len(st.session_state.aircraft_designs) < 2:
-        st.info("Save at least 2 designs to enable comparison.")
+        st.info("Save at least 2 designs from the main design studio to enable comparison.")
+        if st.button("🔙 Back to Design Studio"):
+            st.session_state.comparison_mode = False
+            st.experimental_rerun()
         return
     
-    st.markdown("## ⚖️ Design Comparison")
-    
     design_names = list(st.session_state.aircraft_designs.keys())
-    selected_designs = st.multiselect(
-        "Select designs to compare:",
-        design_names,
-        default=design_names[:2] if len(design_names) >= 2 else design_names
-    )
     
-    if len(selected_designs) < 2:
-        st.warning("Please select at least 2 designs to compare.")
+    # Design selection
+    st.markdown("### Select Designs to Compare")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        design_a = st.selectbox(
+            "First Design:",
+            design_names,
+            key="design_a"
+        )
+    
+    with col2:
+        design_b = st.selectbox(
+            "Second Design:",
+            [name for name in design_names if name != design_a],
+            key="design_b"
+        )
+    
+    if design_a and design_b:
+        design_data_a = st.session_state.aircraft_designs[design_a]
+        design_data_b = st.session_state.aircraft_designs[design_b]
+        
+        # Side-by-side 3D visualizations
+        st.markdown("### 3D Model Comparison")
+        col_3d_a, col_3d_b = st.columns(2)
+        
+        with col_3d_a:
+            st.markdown(f"**{design_a}**")
+            create_3d_visualization_compact(design_data_a['aircraft'], design_data_a['params'])
+        
+        with col_3d_b:
+            st.markdown(f"**{design_b}**")
+            create_3d_visualization_compact(design_data_b['aircraft'], design_data_b['params'])
+        
+        # Detailed comparison metrics
+        display_detailed_comparison(design_data_a, design_data_b)
+        
+        # Performance plots comparison
+        create_comparison_plots(design_data_a, design_data_b)
+    
+    # Back button
+    if st.button("🔙 Back to Design Studio"):
+        st.session_state.comparison_mode = False
+        st.experimental_rerun()
+
+
+def create_3d_visualization_compact(aircraft, params):
+    """Create compact 3D aircraft visualization for comparison view."""
+    try:
+        visualizer_3d = Aircraft3DVisualizer(aircraft)
+        
+        # Create interactive 3D plot
+        fig = visualizer_3d.create_interactive_3d_plotly()
+        
+        # Update layout for compact view
+        fig.update_layout(
+            height=400,
+            title=None,  # No title to save space
+            scene=dict(
+                aspectmode='manual',
+                aspectratio=dict(x=1, y=1, z=0.5),
+                camera=dict(
+                    eye=dict(x=1.5, y=1.5, z=1.0)
+                )
+            ),
+            margin=dict(l=0, r=0, t=0, b=0)
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Display key specs
+        st.info(f"**Span:** {params['wing_span']:.1f}m | **Length:** {params['fuselage_length']:.1f}m | **MTOW:** {params['max_takeoff_weight']:.0f}kg")
+        
+    except Exception as e:
+        st.error(f"Error creating 3D visualization: {e}")
+
+
+def display_detailed_comparison(design_a, design_b):
+    """Display detailed comparison metrics between two designs."""
+    st.markdown("### Detailed Performance Comparison")
+    
+    params_a = design_a['params']
+    params_b = design_b['params']
+    metrics_a = design_a['metrics']
+    metrics_b = design_b['metrics']
+    
+    if not metrics_a or not metrics_b:
+        st.warning("Performance metrics missing for one or both designs.")
         return
     
     # Create comparison table
-    comparison_data = []
-    for name in selected_designs:
-        design = st.session_state.aircraft_designs[name]
-        params = design['params']
-        metrics = design['metrics']
-        
-        if metrics:
-            comparison_data.append({
-                'Design': name,
-                'Wing Span (m)': params['wing_span'],
-                'Wing Area (m²)': params['wing_area'],
-                'Aspect Ratio': params['aspect_ratio'],
-                'Wing Loading (N/m²)': params['wing_loading'],
-                'Max L/D': metrics['max_ld'],
-                'Stall Speed (km/h)': metrics['stall_speed_kmh'],
-                'Range (km)': metrics['range_km'],
-                'Service Ceiling (km)': metrics['service_ceiling_km']
-            })
+    comparison_data = {
+        'Metric': [
+            'Wing Span (m)',
+            'Wing Area (m²)',
+            'Aspect Ratio',
+            'Wing Loading (N/m²)',
+            'Fuel Fraction (%)',
+            'Max L/D Ratio',
+            'Stall Speed (km/h)',
+            'Range (km)',
+            'Endurance (hrs)',
+            'Service Ceiling (km)',
+            'Takeoff Distance (m)'
+        ],
+        params_a['name']: [
+            params_a['wing_span'],
+            params_a['wing_area'],
+            params_a['aspect_ratio'],
+            params_a['wing_loading'],
+            params_a['fuel_fraction'] * 100,
+            metrics_a['max_ld'],
+            metrics_a['stall_speed_kmh'],
+            metrics_a['range_km'],
+            metrics_a['endurance_hrs'],
+            metrics_a['service_ceiling_km'],
+            metrics_a['takeoff_distance']
+        ],
+        params_b['name']: [
+            params_b['wing_span'],
+            params_b['wing_area'],
+            params_b['aspect_ratio'],
+            params_b['wing_loading'],
+            params_b['fuel_fraction'] * 100,
+            metrics_b['max_ld'],
+            metrics_b['stall_speed_kmh'],
+            metrics_b['range_km'],
+            metrics_b['endurance_hrs'],
+            metrics_b['service_ceiling_km'],
+            metrics_b['takeoff_distance']
+        ]
+    }
     
-    if comparison_data:
-        df = pd.DataFrame(comparison_data)
-        st.dataframe(df, use_container_width=True)
+    # Calculate differences and add winner column
+    differences = []
+    winners = []
+    
+    for i, metric in enumerate(comparison_data['Metric']):
+        val_a = comparison_data[params_a['name']][i]
+        val_b = comparison_data[params_b['name']][i]
         
-        # Create comparison charts
-        col1, col2 = st.columns(2)
+        diff = val_b - val_a
+        diff_pct = (diff / val_a * 100) if val_a != 0 else 0
         
-        with col1:
-            fig = px.bar(df, x='Design', y='Max L/D', title='L/D Ratio Comparison')
-            st.plotly_chart(fig, use_container_width=True)
+        # Determine better value based on metric type
+        better_higher = metric in ['Wing Span (m)', 'Wing Area (m²)', 'Aspect Ratio', 'Max L/D Ratio', 
+                                 'Range (km)', 'Endurance (hrs)', 'Service Ceiling (km)']
+        better_lower = metric in ['Wing Loading (N/m²)', 'Stall Speed (km/h)', 'Takeoff Distance (m)']
         
-        with col2:
-            fig = px.bar(df, x='Design', y='Range (km)', title='Range Comparison')
+        if better_higher:
+            winner = params_b['name'] if val_b > val_a else params_a['name'] if val_a > val_b else "Tie"
+        elif better_lower:
+            winner = params_b['name'] if val_b < val_a else params_a['name'] if val_a < val_b else "Tie"
+        else:
+            winner = "N/A"
+        
+        differences.append(f"{diff:+.1f} ({diff_pct:+.1f}%)")
+        winners.append(winner)
+    
+    comparison_data['Difference (B-A)'] = differences
+    comparison_data['Better'] = winners
+    
+    # Display as dataframe
+    df = pd.DataFrame(comparison_data)
+    st.dataframe(df, use_container_width=True)
+    
+    # Performance summary
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        a_wins = sum(1 for winner in winners if winner == params_a['name'])
+        st.metric(f"{params_a['name']} Wins", a_wins)
+    
+    with col2:
+        b_wins = sum(1 for winner in winners if winner == params_b['name'])
+        st.metric(f"{params_b['name']} Wins", b_wins)
+    
+    with col3:
+        ties = sum(1 for winner in winners if winner == "Tie")
+        st.metric("Ties", ties)
+
+
+def create_comparison_plots(design_a, design_b):
+    """Create comparison plots for two designs."""
+    st.markdown("### Performance Charts Comparison")
+    
+    aircraft_a = design_a['aircraft']
+    aircraft_b = design_b['aircraft']
+    
+    # Create side-by-side comparison plots
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### Drag Polar Comparison")
+        
+        # Generate drag polar data for both aircraft
+        aoa_range = np.linspace(-5, 20, 50)
+        
+        cl_values_a, cd_values_a = [], []
+        cl_values_b, cd_values_b = [], []
+        
+        for aoa in aoa_range:
+            try:
+                cl_a = aircraft_a.calculate_lift_coefficient(aoa)
+                cd_a = aircraft_a.calculate_drag_coefficient(cl_a)
+                cl_values_a.append(cl_a)
+                cd_values_a.append(cd_a)
+                
+                cl_b = aircraft_b.calculate_lift_coefficient(aoa)
+                cd_b = aircraft_b.calculate_drag_coefficient(cl_b)
+                cl_values_b.append(cl_b)
+                cd_values_b.append(cd_b)
+            except:
+                cl_values_a.append(0)
+                cd_values_a.append(0.1)
+                cl_values_b.append(0)
+                cd_values_b.append(0.1)
+        
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=cd_values_a, y=cl_values_a,
+            mode='lines+markers',
+            name=design_a['params']['name'],
+            line=dict(color='blue', width=2)
+        ))
+        fig.add_trace(go.Scatter(
+            x=cd_values_b, y=cl_values_b,
+            mode='lines+markers',
+            name=design_b['params']['name'],
+            line=dict(color='red', width=2)
+        ))
+        
+        fig.update_layout(
+            xaxis_title="Drag Coefficient (CD)",
+            yaxis_title="Lift Coefficient (CL)",
+            height=400
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        st.markdown("#### Key Metrics Comparison")
+        
+        metrics_a = design_a['metrics']
+        metrics_b = design_b['metrics']
+        
+        if metrics_a and metrics_b:
+            # Radar chart comparison
+            categories = ['Max L/D', 'Range (km/100)', 'Service Ceiling (km)', 'Endurance (hrs)']
+            
+            values_a = [
+                metrics_a['max_ld'],
+                metrics_a['range_km'] / 100,  # Scale for visualization
+                metrics_a['service_ceiling_km'],
+                metrics_a['endurance_hrs']
+            ]
+            
+            values_b = [
+                metrics_b['max_ld'],
+                metrics_b['range_km'] / 100,  # Scale for visualization
+                metrics_b['service_ceiling_km'],
+                metrics_b['endurance_hrs']
+            ]
+            
+            fig = go.Figure()
+            
+            fig.add_trace(go.Scatterpolar(
+                r=values_a + [values_a[0]],  # Close the shape
+                theta=categories + [categories[0]],
+                fill='toself',
+                name=design_a['params']['name'],
+                line=dict(color='blue')
+            ))
+            
+            fig.add_trace(go.Scatterpolar(
+                r=values_b + [values_b[0]],  # Close the shape
+                theta=categories + [categories[0]],
+                fill='toself',
+                name=design_b['params']['name'],
+                line=dict(color='red')
+            ))
+            
+            fig.update_layout(
+                polar=dict(
+                    radialaxis=dict(
+                        visible=True,
+                        range=[0, max(max(values_a), max(values_b)) * 1.1]
+                    )),
+                height=400
+            )
+            
             st.plotly_chart(fig, use_container_width=True)
 
 
 def main():
     """Main Streamlit application."""
     initialize_session_state()
+    
+    # Initialize comparison mode if not set
+    if 'comparison_mode' not in st.session_state:
+        st.session_state.comparison_mode = False
+    
+    # Route to comparison page if in comparison mode
+    if st.session_state.comparison_mode:
+        create_comparison_page()
+        return
     
     # App header
     st.markdown('<h1 class="main-header">✈️ Aircraft Design Studio</h1>', unsafe_allow_html=True)
@@ -876,33 +1248,20 @@ def main():
         📖 **For complete equations and criteria, see:** `docs/FLIGHT_FEASIBILITY.md`
         """)
     
-    # Main layout
-    params = create_parameter_inputs()
+    # NEW LAYOUT: Main content with persistent 3D view
+    # Create two main columns: sidebar for parameters, main area split between 3D and content
+    main_container = st.container()
     
-    # Create aircraft object
-    aircraft = create_aircraft_from_params(params)
-    
-    # Main content area
-    tab1, tab2, tab3, tab4 = st.tabs(["🔍 Design Analysis", "📊 Performance Plots", "🛩️ 3D Visualization", "⚖️ Compare Designs"])
-    
-    with tab1:
-        # Display design assessment
-        display_design_assessment(aircraft, params)
+    with main_container:
+        # Parameters in sidebar (existing)
+        params = create_parameter_inputs()
         
-        # Calculate and display performance metrics
+        # Create aircraft object
+        aircraft = create_aircraft_from_params(params)
+        
+        # Calculate metrics once for the session
         with st.spinner("Calculating performance metrics..."):
             metrics = calculate_performance_metrics(aircraft)
-        
-        if metrics:
-            # Flight Feasibility Assessment (NEW!)
-            display_flight_feasibility(metrics, params)
-            
-            # Performance Metrics
-            display_performance_metrics(metrics)
-            
-            # Save design button
-            if st.button("💾 Save This Design", type="primary"):
-                save_design_to_session(params, aircraft, metrics)
         
         # Store current design in session
         st.session_state.current_design = {
@@ -910,17 +1269,48 @@ def main():
             'aircraft': aircraft,
             'metrics': metrics
         }
-    
-    with tab2:
-        st.markdown('<div class="section-header">Performance Analysis</div>', unsafe_allow_html=True)
-        with st.spinner("Generating interactive plots..."):
-            create_interactive_plots(aircraft)
-    
-    with tab3:
-        create_3d_visualization(aircraft, params)
-    
-    with tab4:
-        display_design_comparison()
+        
+        # Main content area: Split between persistent 3D and tabbed content
+        col_3d, col_content = st.columns([1, 1])  # Equal width columns
+        
+        with col_3d:
+            st.markdown('<div class="persistent-3d-container">', unsafe_allow_html=True)
+            st.markdown("### 🛩️ Live 3D Model")
+            create_3d_visualization_persistent(aircraft, params)
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            # Add save design button here for easy access
+            if st.button("💾 Save Current Design", type="primary", use_container_width=True):
+                save_design_to_session(params, aircraft, metrics)
+            
+            # Quick access to comparison if designs available
+            if len(st.session_state.aircraft_designs) >= 2:
+                if st.button("⚖️ Compare Designs", use_container_width=True):
+                    st.session_state.comparison_mode = True
+                    st.experimental_rerun()
+        
+        with col_content:
+            # Tabbed content area (smaller tabs, no 3D tab needed)
+            tab1, tab2, tab3 = st.tabs(["🔍 Design Analysis", "📊 Performance Plots", "📋 Saved Designs"])
+            
+            with tab1:
+                # Display design assessment
+                display_design_assessment(aircraft, params)
+                
+                if metrics:
+                    # Flight Feasibility Assessment
+                    display_flight_feasibility(metrics, params)
+                    
+                    # Performance Metrics
+                    display_performance_metrics(metrics)
+            
+            with tab2:
+                st.markdown('<div class="section-header">Performance Analysis</div>', unsafe_allow_html=True)
+                with st.spinner("Generating interactive plots..."):
+                    create_interactive_plots(aircraft)
+            
+            with tab3:
+                display_saved_designs_summary()
     
     # Footer
     st.markdown("---")
