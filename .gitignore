@@ -3,3 +3,4 @@ activate.sh
 __pycache__/
 deploy/Makefile
 .cursor/mcp.json
+infra/.DS_Store
