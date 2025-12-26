@@ -111,6 +111,79 @@ class PerformanceAnalyzer:
                 
         return best_angle
     
+    def calculate_stall_speed(self, atmospheric_conditions: AtmosphericConditions, weight: float) -> float:
+        """
+        Calculate stall speed for given atmospheric conditions and weight.
+        
+        Stall occurs when the wing can no longer generate sufficient lift to
+        support the aircraft weight, typically at maximum lift coefficient.
+        
+        Args:
+            atmospheric_conditions: Atmospheric conditions for the calculation
+            weight: Aircraft weight in kg
+            
+        Returns:
+            Stall speed in m/s
+        """
+        # Convert weight to Newtons
+        weight_n = weight * 9.81
+        
+        # Stall speed formula: V_stall = sqrt(2*W / (rho * CL_max * S))
+        stall_speed = np.sqrt(
+            2 * weight_n / 
+            (atmospheric_conditions.density * self.aircraft.cl_max * self.aircraft.geometry.wing_area)
+        )
+        
+        return stall_speed
+    
+    def calculate_service_ceiling(self, weight: float = None, thrust_available: float = None) -> float:
+        """
+        Calculate service ceiling (altitude where rate of climb drops to 0.5 m/s).
+        
+        Service ceiling is the maximum practical operational altitude where the
+        aircraft can still maintain a minimum rate of climb.
+        
+        Args:
+            weight: Aircraft weight in kg (defaults to MTOW)
+            thrust_available: Available thrust in N (estimated if not provided)
+            
+        Returns:
+            Service ceiling in meters
+        """
+        if weight is None:
+            weight = self.aircraft.mass.max_takeoff_weight
+        
+        if thrust_available is None:
+            # Estimate thrust based on wing loading and aircraft type
+            # This is a simplified estimation
+            wing_loading = weight * 9.81 / self.aircraft.geometry.wing_area
+            thrust_available = weight * 9.81 * 0.3  # Assume T/W ratio of 0.3
+        
+        # Search for altitude where climb rate drops to 0.5 m/s
+        for altitude in range(0, 20000, 100):  # Check up to 20km
+            atm = AtmosphericConditions.standard_atmosphere(altitude)
+            
+            # Estimate climb rate at this altitude (simplified)
+            # At higher altitudes, air density decreases, reducing engine performance
+            density_ratio = atm.density / 1.225  # Ratio to sea level density
+            thrust_at_altitude = thrust_available * density_ratio
+            
+            # Simplified drag calculation at climb speed
+            climb_speed = self.calculate_stall_speed(atm, weight) * 1.3  # 30% above stall
+            drag = 0.5 * atm.density * climb_speed**2 * self.aircraft.cd0 * self.aircraft.geometry.wing_area
+            
+            # Rate of climb = (Thrust - Drag) * V / Weight
+            excess_power = (thrust_at_altitude - drag) * climb_speed
+            if excess_power <= 0:
+                return max(0, altitude - 100)  # Return previous altitude
+            
+            climb_rate = excess_power / (weight * 9.81)
+            
+            if climb_rate <= 0.5:  # Service ceiling criteria
+                return altitude
+        
+        return 20000  # Return maximum if no ceiling found
+    
     def calculate_climb_performance(self, altitude_range: Tuple[float, float], 
                                   weight: float, thrust_available: float) -> Dict:
         """
